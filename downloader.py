@@ -5,7 +5,6 @@
 # @File    : downloader.py
 # @Software: PyCharm
 
-
 from contextlib import closing
 import requests, json, re, os, sys
 from urllib.parse import urlencode
