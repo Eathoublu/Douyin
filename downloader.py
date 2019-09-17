@@ -26,7 +26,7 @@ class DouyinVideoDownloader:
     def get_random_proxy(url):
         while True:
             try:
-                resp = requests.get('http://*************/random/')  # 代理池地址, 替换成自己的代理
+                resp = requests.get('http://***********/random/')  # 代理池地址, 替换成自己的代理
                 if url.startswith('https'):
                     proxy = resp.content.decode('utf-8')
                     proxies = {
