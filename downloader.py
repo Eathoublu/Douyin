@@ -5,14 +5,6 @@
 # @File    : downloader.py
 # @Software: PyCharm
 
-
-# -*- coding: utf-8 -*-
-# @Time    : 2019/9/17 12:19
-# @Author  : xuzhihai0723
-# @Email   : 18829040039@163.com
-# @File    : downloader.py
-# @Software: PyCharm
-
 from contextlib import closing
 import requests, json, re, os, sys
 from urllib.parse import urlencode
