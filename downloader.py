@@ -26,7 +26,7 @@ class DouyinVideoDownloader:
     def get_random_proxy(url):
         while True:
             try:
-                resp = requests.get('http://***********/random/')  # 代理池地址, 替换成自己的代理
+                resp = requests.get('http://*************/random/')  # 代理池地址, 替换成自己的代理
                 if url.startswith('https'):
                     proxy = resp.content.decode('utf-8')
                     proxies = {
@@ -72,7 +72,7 @@ class DouyinVideoDownloader:
         share_user_url = 'https://www.douyin.com/share/user/%s' % user_id
         while True:
             try:
-                resp = self.session.get(share_user_url)
+                resp = self.session.get(share_user_url, timeout=30)
                 while resp.status_code != 200:
                     resp = self.session.get(share_user_url)
                 break
@@ -151,6 +151,9 @@ class DouyinVideoDownloader:
                 i = i + 1
                 print('第{}次重新连接...'.format(i))
                 # user_api = self.format_api(user_id, max_cursor, type_flag)
+                # 每请求连接 100 次更换 IP
+                if i % 100 == 0:
+                    user_api, nickname = self._format_api(user_id, max_cursor, type_flag)
                 try:
                     response = self.session.get(user_api, timeout=30)
                     while response.status_code != 200:
@@ -238,10 +241,10 @@ class DouyinVideoDownloader:
         print('使用UID下载\n分享用户页面，用浏览器打开短链接，原始链接中/share/user/后的数字即是UID')
         user_id = input('请输入ID (例如62845793523): ')
         user_id = user_id if user_id else '62845793523'
-        watermark_flag = input('是否下载带水印的视频 (0-否(默认), 1-是): ')
+        watermark_flag = input('是否下载带水印的视频 (0 - > 否(默认), 1 -> 是): ')
         watermark_flag = watermark_flag if watermark_flag != '' else '0'
         watermark_flag = bool(int(watermark_flag))
-        type_flag = input('f -> 收藏的(默认), p -> 上传的: ')
+        type_flag = input('f -> 收藏的, p -> 上传的(默认): ')
         type_flag = type_flag if type_flag != '' else 'p'
         save_dir = input('保存路径 (例如"E:/Download/", 默认"./Download/"): ')
         save_dir = save_dir if save_dir else "./Download/"
