@@ -25,7 +25,7 @@ class DouyinVideoDownloader:
     def get_random_proxy(url):
         while True:
             try:
-                resp = requests.get('http://***********/random/')  # 代理池地址, 替换成自己的代理
+                resp = requests.get('http://**********/random/')  # 代理池地址, 替换成自己的代理
                 if url.startswith('https'):
                     proxy = resp.content.decode('utf-8')
                     proxies = {
@@ -71,6 +71,7 @@ class DouyinVideoDownloader:
         share_user_url = 'https://www.douyin.com/share/user/%s' % user_id
         while True:
             try:
+                self._set_session()
                 resp = self.session.get(share_user_url, timeout=30)
                 while resp.status_code != 200:
                     resp = self.session.get(share_user_url)
@@ -105,7 +106,6 @@ class DouyinVideoDownloader:
         构造用户视频信息 api
         :return:
         """
-        self._set_session()
         sec_uid, dytk, nickname, tac = self._get_tac(user_id)
         js = self._update_tac(tac)
         _signature = self._get_signature(user_id, js)
@@ -214,7 +214,7 @@ class DouyinVideoDownloader:
         """
         size = 0
         video_url = self.get_download_url(video_url, watermark_flag=watermark_flag)
-        # 更换 UA 头为手机端
+        # 模拟 APP 请求
         headers = {
             'user-agent': 'okhttp/3.10.0.1'
         }
