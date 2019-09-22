@@ -9,14 +9,20 @@ from contextlib import closing
 import requests, json, re, os, sys
 from urllib.parse import urlencode
 import execjs
+from ipaddress import ip_address
+import random
 
 
 class DouyinVideoDownloader:
 
-    def __init__(self):
+    def __init__(self, user_id=None, watermark_flag=None, type_flag=None, download_flag=False):
         """
         抖音 App 视频下载
         """
+        self.user_id = user_id
+        self.watermark_flag = watermark_flag
+        self.type_flag = type_flag
+        self.download_flag = download_flag
         self.session = requests.session()
         with open('get_signature_douyin.js', 'rb') as f:
             self.js = f.read().decode()
@@ -25,7 +31,7 @@ class DouyinVideoDownloader:
     def get_random_proxy(url):
         while True:
             try:
-                resp = requests.get('http://**********/random/')  # 代理池地址, 替换成自己的代理
+                resp = requests.get('http://*************/random/')  # 代理池地址, 替换成自己的代理
                 if url.startswith('https'):
                     proxy = resp.content.decode('utf-8')
                     proxies = {
@@ -45,7 +51,7 @@ class DouyinVideoDownloader:
 
     def _set_session(self):
         """
-        配置代理: 测试单 IP 下载很难获取到后续视频地址, 使用代理会好很多
+        配置代理
         :return:
         """
         proxies = self.get_random_proxy('https')
@@ -62,6 +68,26 @@ class DouyinVideoDownloader:
             'X-Forwarded-For': str(proxies['https'].split('@')[1]).split(':')[0],
         }
 
+    def _fack_ip(self):
+        """
+        伪装 ip 代理
+        :return:
+        """
+        rip = ip_address('0.0.0.0')
+        while rip.is_private:
+            rip = ip_address('.'.join(map(str, (random.randint(0, 255) for _ in range(4)))))
+        self.session.headers = {
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'accept-encoding': 'gzip, deflate, br',
+            'accept-language': 'zh-CN,zh;q=0.9',
+            'pragma': 'no-cache',
+            'cache-control': 'no-cache',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Linux; U; Android 5.1.1; zh-cn; MI 4S Build/LMY47V) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.146 Mobile Safari/537.36 XiaoMi/MiuiBrowser/9.1.3',
+            'X-Real-IP': str(rip),
+            'X-Forwarded-For': str(rip),
+        }
+
     def _get_tac(self, user_id):
         """
         个人主页获取 dytk、 tac 等关键参数
@@ -71,7 +97,8 @@ class DouyinVideoDownloader:
         share_user_url = 'https://www.douyin.com/share/user/%s' % user_id
         while True:
             try:
-                self._set_session()
+                # self._set_session()
+                self._fack_ip()
                 resp = self.session.get(share_user_url, timeout=30)
                 while resp.status_code != 200:
                     resp = self.session.get(share_user_url)
@@ -174,7 +201,7 @@ class DouyinVideoDownloader:
                         nickname = nickname.replace(c, '').strip().strip('\.')
                         share_desc = share_desc.replace(c, '').strip()
                 share_id = each['aweme_id']
-                if share_desc in ['抖音-原创音乐短视频社区', 'TikTok', '']:
+                if share_desc in {'抖音-原创音乐短视频社区', 'TikTok', ''}:
                     video_names.append(share_id + '.mp4')
                 else:
                     video_names.append(share_id + '-' + share_desc + '.mp4')
@@ -237,23 +264,31 @@ class DouyinVideoDownloader:
         """
         运行函数
         """
-        print('使用UID下载\n分享用户页面，用浏览器打开短链接，原始链接中/share/user/后的数字即是UID')
-        user_id = input('请输入ID (例如62845793523): ')
-        user_id = user_id if user_id else '62845793523'
-        watermark_flag = input('是否下载带水印的视频 (0 - > 否(默认), 1 -> 是): ')
-        watermark_flag = watermark_flag if watermark_flag != '' else '0'
-        watermark_flag = bool(int(watermark_flag))
-        type_flag = input('f -> 收藏的, p -> 上传的(默认): ')
-        type_flag = type_flag if type_flag != '' else 'p'
+        if not self.user_id:
+            print('使用UID下载\n分享用户页面，用浏览器打开短链接，原始链接中/share/user/后的数字即是UID')
+            user_id = input('请输入ID (例如62845793523): ')
+            self.user_id = user_id if user_id else '62845793523'
+        if not self.watermark_flag:
+            watermark_flag = input('是否下载带水印的视频 (0 - > 否(默认), 1 -> 是): ')
+            watermark_flag = watermark_flag if watermark_flag != '' else '0'
+            self.watermark_flag = bool(int(watermark_flag))
+        if not self.type_flag:
+            type_flag = input('f -> 收藏的, p -> 上传的(默认): ')
+            self.type_flag = type_flag if type_flag != '' else 'p'
         save_dir = input('保存路径 (例如"E:/Download/", 默认"./Download/"): ')
         save_dir = save_dir if save_dir else "./Download/"
-        video_names, video_urls, share_urls, nickname = self.get_video_urls(user_id, type_flag)
+        video_names, video_urls, share_urls, nickname = self.get_video_urls(self.user_id, self.type_flag)
+        if not self.download_flag:
+            return {
+                'nickname': nickname,
+                'data': [{video_names[i]: video_urls[i]} for i in range(len(video_names))]
+            }
         nickname_dir = os.path.join(save_dir, nickname)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         if nickname not in os.listdir(save_dir):
             os.mkdir(nickname_dir)
-        if type_flag == 'f':
+        if self.type_flag == 'f':
             if 'favorite' not in os.listdir(nickname_dir):
                 os.mkdir(os.path.join(nickname_dir, 'favorite'))
         print('视频下载中: 共有%d个作品!\n' % len(video_urls))
@@ -265,15 +300,15 @@ class DouyinVideoDownloader:
                 video_name = video_names[num].replace('/', '')
             else:
                 video_name = video_names[num]
-            video_path = os.path.join(nickname_dir, video_name) if type_flag != 'f' else os.path.join(
+            video_path = os.path.join(nickname_dir, video_name) if self.type_flag != 'f' else os.path.join(
                 nickname_dir, 'favorite', video_name)
             if os.path.isfile(video_path):
                 print('视频已存在')
             else:
-                self.video_downloader(video_urls[num], video_path, watermark_flag)
+                self.video_downloader(video_urls[num], video_path, self.watermark_flag)
             print('\n')
         print('下载完成!')
 
 
 if __name__ == '__main__':
-    DouyinVideoDownloader().run()
+    DouyinVideoDownloader(download_flag=True).run()
