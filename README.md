@@ -15,6 +15,10 @@
 --------
 
   python download.py
+  
+效果
+--------
+![image](https://github.com/Esbiya/Douyin/blob/master/view.gif)
 
 公告
 --------
