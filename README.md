@@ -15,7 +15,7 @@
 运行
 --------
 
-  python downloader.py
+ python downloader.py
   
 效果
 --------
