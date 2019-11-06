@@ -37,7 +37,7 @@ python downloader.py
 
 - **更新 Flask API 服务, 可部署为线上服务, 传入用户ID等参数即可返回视频下载地址列表。**
   
-## :dolphin:
+## :dolphin:效果
 --------
 ![image](https://github.com/Esbiya/Douyin/blob/master/view.gif)
 
